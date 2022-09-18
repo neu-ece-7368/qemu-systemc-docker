@@ -1,18 +1,19 @@
-FROM ubuntu:18.04
+FROM ubuntu:22.04
 
 MAINTAINER gerstl <gerstl@ece.utexas.edu>
 
 ARG INSTALL_ROOT=/opt
 ARG SYSTEMC_VERSION=2.3.3
 ARG SYSTEMC_ARCHIVE=systemc-2.3.3.tar.gz
-ARG XILINX_VERSION=2020.2
+ARG XILINX_VERSION=2022.1
 
-# build with "docker build --build-arg XILINX_VERSION=2020.2 -t qemu-systemc:2020.2 ."
+# build with "docker build --build-arg XILINX_VERSION=2022.1 -t qemu-systemc:2022.1 ."
 
 # install dependences:
 
 RUN apt-get update &&  DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
     build-essential \
+    ninja-build \
     ccache \
     clang \
     cpio \
@@ -74,6 +75,7 @@ RUN apt-get update &&  DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
     libvte-2.91-dev \
     libxen-dev \
     libzstd-dev \
+    libgcrypt20-dev \ 
     locales \
     lsb-release \
     libtool \
@@ -124,13 +126,16 @@ RUN cd /home/xilinx && \
   rm -f ${SYSTEMC_ARCHIVE} && \
   rm -rf systemc-${SYSTEMC_VERSION}
 
-# install QEMU (with patch for libssh bug in Ubuntu 18.04)
+# install QEMU 
+#  had to add --enable-gcrypt as libary dependency detection did not work 
+#  automatically. This is for the vhost-crypt devices (I believe)
+#  this also brought dependency of libgcrypt20-dev (see above)
 RUN cd /home/xilinx && \
-  git clone -b xilinx-v${XILINX_VERSION} --depth 1 https://github.com/Xilinx/qemu.git && \
+  git clone -b xlnx_rel_v${XILINX_VERSION} --depth 1 https://github.com/Xilinx/qemu.git && \
   cd qemu && \
-  ./configure --target-list=aarch64-softmmu,microblazeel-softmmu --enable-fdt --disable-kvm --disable-xen && \
-  sed -i -e 's|-DHAVE_LIBSSH_0_8||g' config-host.mak && \
-  sed -i -e 's|ssh_get_publickey(|ssh_get_server_publickey(|g' block/ssh.c && \
+  mkdir build && \ 
+  cd build && \ 
+  ../configure --target-list=aarch64-softmmu,microblazeel-softmmu --enable-fdt --disable-kvm --disable-xen --enable-gcrypt&& \
   make && \
   make install && \
   cd /home/xilinx && \
