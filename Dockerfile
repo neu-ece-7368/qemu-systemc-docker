@@ -114,8 +114,8 @@ RUN adduser --disabled-password --gecos '' xilinx && \
   echo "xilinx ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 
 # run the SystemC install
-COPY ${SYSTEMC_ARCHIVE} /home/xilinx/
 RUN cd /home/xilinx && \
+  wget https://www.accellera.org/images/downloads/standards/systemc/${SYSTEMC_ARCHIVE} && \
   tar xzf ${SYSTEMC_ARCHIVE} && \
   mkdir systemc-${SYSTEMC_VERSION}/objdir && \
   cd systemc-${SYSTEMC_VERSION}/objdir && \
